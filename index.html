@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ভিডিও স্ট্রিম - TikTok স্টাইল</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background-color: #000;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ভিডিও কন্টেইনার */
+        .video-container {
+            height: 100vh;
+            overflow-y: scroll;
+            scroll-snap-type: y mandatory;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* প্রতিটি ভিডিও আইটেম */
+        .video-item {
+            scroll-snap-align: start;
+            height: 100vh;
+            width: 100%;
+            position: relative;
+            background-color: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* ভিডিওর ওভারলে কন্ট্রোল */
+        .video-overlay {
+            position: absolute;
+            bottom: 80px;
+            right: 16px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            color: white;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            cursor: pointer;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+        }
+
+        .action-btn svg {
+            width: 28px;
+            height: 28px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+        }
+
+        .action-btn span {
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        /* ভিডিও ইনফো */
+        .video-info {
+            position: absolute;
+            bottom: 20px;
+            left: 16px;
+            color: white;
+            z-index: 10;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            padding: 20px 16px 10px 16px;
+            width: 80%;
+            border-radius: 12px;
+        }
+
+        .video-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .video-desc {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        /* প্রগ্রেস বার */
+        .progress-bar {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            height: 3px;
+            background-color: #ff3b5c;
+            z-index: 20;
+            transition: width 0.1s linear;
+        }
+
+        /* মিউট/আনমিউট বাটন */
+        .mute-btn {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.6);
+            border-radius: 50%;
+            padding: 12px;
+            cursor: pointer;
+            z-index: 15;
+            display: none;
+            pointer-events: auto;
+        }
+
+        /* হেডার */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            pointer-events: none;
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: bold;
+            pointer-events: auto;
+        }
+
+        .header-icons {
+            display: flex;
+            gap: 16px;
+            pointer-events: auto;
+        }
+
+        .header-icons span {
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        /* স্ক্রোলবার লুকান */
+        .video-container::-webkit-scrollbar {
+            display: none;
+        }
+        
+        .video-container {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* লোডিং ইন্ডিকেটর */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: white;
+            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
+            z-index: 5;
+        }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <div class="logo">🎬 Video Stream</div>
+    <div class="header-icons">
+        <span>🔍</span>
+        <span>📱</span>
+    </div>
+</div>
+
+<div class="video-container" id="videoContainer">
+    <!-- ভিডিও গুলো ডাইনামিকভাবে জাভাস্ক্রিপ্ট দ্বারা ইনজেক্ট হবে -->
+</div>
+
+<script>
+    // =====================================================
+    // এখানে আপনার ১০টি ভিডিওর ডাইরেক্ট লিংক দিন
+    // =====================================================
+    const videoLinks = [
+        "https://files.catbox.moe/e24n6b.mp4",
+        "https://files.catbox.moe/xohlt2.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerJoyrides.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerMeltdowns.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/Sintel.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/SubaruOutbackOnStreetAndDirt.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/WhatCar.mp4",
+        "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/VolkswagenGTIReview.mp4"
+    ];
+    
+    // ভিডিওর টাইটেল এবং বিবরণ (ঐচ্ছিক)
+    const videoMetadata = [
+        { title: "এপিক ব্লেজেস 🔥", desc: "#ভিডিও #ট্রেন্ডিং" },
+        { title: "এস্কেপ অ্যাডভেঞ്ചার 🏃", desc: "#এডভেঞ্চার #মজা" },
+        { title: "ফান টাইমস 😂", desc: "#কমেডি #ভাইরাল" },
+        { title: "জয়রাইডস 🚗", desc: "#গাড়ি #স্পিড" },
+        { title: "মেল্টডাউন 🤯", desc: "#রিয়্যাকশন #ফানি" },
+        { title: "সিন্টেল - অ্যানিমেশন 🎬", desc: "#অ্যানিমেশন #সিনেমা" },
+        { title: "সুবারু অফরোড 🚙", desc: "#অফরোড #গাড়ি" },
+        { title: "টিয়ারস অফ স্টীল 🗡️", desc: "#শর্টফিল্ম #এ্যাকশন" },
+        { title: "হোয়াট কার? 🚘", desc: "#রিভিউ #গাড়ি" },
+        { title: "ভক্সওয়াগেন জিটিআই 🔧", desc: "#জিটিআই #স্পোর্টস" }
+    ];
+
+    let currentPlayingIndex = 0;
+    let observer = null;
+    let videoElements = [];
+
+    // কন্টেইনার রেফারেন্স
+    const container = document.getElementById('videoContainer');
+
+    // ভিডিও লোড এবং রেন্ডার ফাংশন
+    function renderVideos() {
+        container.innerHTML = '';
+        videoElements = [];
+
+        videoLinks.forEach((link, index) => {
+            const videoItem = document.createElement('div');
+            videoItem.className = 'video-item';
+            videoItem.setAttribute('data-index', index);
+
+            // ভিডিও এলিমেন্ট
+            const video = document.createElement('video');
+            video.src = link;
+            video.playsInline = true;
+            video.loop = false;
+            video.muted = false; // প্রথম ভিডিও আনমিউটেড থাকবে, পরের গুলো মিউটেড করে শুরু হবে
+            video.preload = 'auto';
+            video.setAttribute('playsinline', '');
+            
+            // লোডিং ইন্ডিকেটর
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'loading';
+            loadingDiv.innerText = 'লোড হচ্ছে...';
+            
+            // প্রগ্রেস বার
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            
+            // ওভারলে (লাইক, কমেন্ট, শেয়ার)
+            const overlay = document.createElement('div');
+            overlay.className = 'video-overlay';
+            overlay.innerHTML = `
+                <div class="action-btn" data-action="like">
+                    <svg fill="white" viewBox="0 0 24 24" width="28" height="28">
+                        <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/>
+                    </svg>
+                    <span>0</span>
+                </div>
+                <div class="action-btn" data-action="comment">
+                    <svg fill="white" viewBox="0 0 24 24" width="28" height="28">
+                        <path d="M21 6h-7.59l3.29-3.29L16 2l-4 4-4-4-.71.71L10.59 6H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
+                    </svg>
+                    <span>0</span>
+                </div>
+                <div class="action-btn" data-action="share">
+                    <svg fill="white" viewBox="0 0 24 24" width="28" height="28">
+                        <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 11.3C7.5 10.8 6.79 10.5 6 10.5c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/>
+                    </svg>
+                    <span>শেয়ার</span>
+                </div>
+            `;
+            
+            // ভিডিও ইনফো
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'video-info';
+            const meta = videoMetadata[index] || { title: `ভিডিও ${index + 1}`, desc: "#ভিডিও #ট্রেন্ডিং" };
+            infoDiv.innerHTML = `
+                <div class="video-title">${meta.title}</div>
+                <div class="video-desc">${meta.desc}</div>
+            `;
+            
+            // মিউট বাটন (শুধুমাত্র ভিজুয়াল ইফেক্টের জন্য)
+            const muteBtn = document.createElement('div');
+            muteBtn.className = 'mute-btn';
+            muteBtn.innerHTML = '🔊';
+            muteBtn.style.display = 'none';
+            
+            videoItem.appendChild(video);
+            videoItem.appendChild(loadingDiv);
+            videoItem.appendChild(progressBar);
+            videoItem.appendChild(overlay);
+            videoItem.appendChild(infoDiv);
+            videoItem.appendChild(muteBtn);
+            
+            container.appendChild(videoItem);
+            
+            // ভিডিও এলিমেন্ট সংরক্ষণ
+            videoElements.push({
+                element: video,
+                item: videoItem,
+                loadingDiv: loadingDiv,
+                progressBar: progressBar,
+                muteBtn: muteBtn,
+                index: index
+            });
+            
+            // ভিডিও ইভেন্ট লিসেনার
+            video.addEventListener('loadeddata', () => {
+                loadingDiv.style.display = 'none';
+            });
+            
+            video.addEventListener('timeupdate', () => {
+                if (video.duration) {
+                    const percent = (video.currentTime / video.duration) * 100;
+                    progressBar.style.width = percent + '%';
+                }
+            });
+            
+            video.addEventListener('ended', () => {
+                progressBar.style.width = '0%';
+                // যদি শেষ হয়, তাহলে পরের ভিডিওতে যাওয়ার জন্য স্ক্রল করতে পারে, কিন্তু আমরা অটো স্ক্রল করব না
+                // তবে ইউজার ম্যানুয়ালি স্ক্রল করবে
+            });
+            
+            // মিউট বাটন ক্লিক হ্যান্ডলার
+            muteBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                video.muted = !video.muted;
+                muteBtn.innerHTML = video.muted ? '🔇' : '🔊';
+                setTimeout(() => {
+                    muteBtn.style.opacity = '0';
+                    setTimeout(() => {
+                        muteBtn.style.display = 'none';
+                    }, 500);
+                }, 1500);
+            });
+        });
+        
+        // স্ক্রোল অবজারভার সেটআপ
+        setupIntersectionObserver();
+        
+        // প্রথম ভিডিও অটোপ্লে শুরু
+        setTimeout(() => {
+            playCurrentVideo();
+        }, 500);
+    }
+    
+    // ইন্টারসেকশন অবজারভার - ভিডিও ভিউপোর্টে আসলে প্লে করবে
+    function setupIntersectionObserver() {
+        const options = {
+            root: container,
+            rootMargin: '0px',
+            threshold: 0.6
+        };
+        
+        observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                const videoDiv = entry.target;
+                const index = parseInt(videoDiv.getAttribute('data-index'));
+                const videoObj = videoElements[index];
+                
+                if (entry.isIntersecting) {
+                    // ভিউপোর্টে এসেছে, এই ভিডিও প্লে করবে
+                    if (videoObj && videoObj.element) {
+                        // বাকি সব ভিডিও পজ করবে
+                        pauseAllVideosExcept(index);
+                        // ভিডিও প্লে করার চেষ্টা
+                        playVideoWithMuteCheck(videoObj, index);
+                        currentPlayingIndex = index;
+                        updateUrlHash(index);
+                    }
+                }
+            });
+        }, options);
+        
+        // প্রতিটি ভিডিও আইটেম অবজার্ভ করা
+        document.querySelectorAll('.video-item').forEach(item => {
+            observer.observe(item);
+        });
+    }
+    
+    function pauseAllVideosExcept(exceptIndex) {
+        videoElements.forEach((videoObj, idx) => {
+            if (idx !== exceptIndex) {
+                videoObj.element.pause();
+                // প্রগ্রেস বার রিসেট না করলেও চলে
+            }
+        });
+    }
+    
+    function playVideoWithMuteCheck(videoObj, index) {
+        const video = videoObj.element;
+        // প্রথম ভিডিও আনমিউটেড, বাকি সব মিউটেড (টিকটক স্টাইল)
+        if (index === 0) {
+            video.muted = false;
+        } else {
+            video.muted = true;
+        }
+        
+        const playPromise = video.play();
+        if (playPromise !== undefined) {
+            playPromise.then(() => {
+                videoObj.loadingDiv.style.display = 'none';
+                // মিউট বাটন দেখানো
+                if (video.muted && index !== 0) {
+                    videoObj.muteBtn.style.display = 'flex';
+                    videoObj.muteBtn.style.opacity = '1';
+                    videoObj.muteBtn.innerHTML = '🔇';
+                    setTimeout(() => {
+                        videoObj.muteBtn.style.opacity = '0';
+                        setTimeout(() => {
+                            videoObj.muteBtn.style.display = 'none';
+                        }, 500);
+                    }, 2000);
+                } else if (!video.muted && index === 0) {
+                    videoObj.muteBtn.style.display = 'flex';
+                    videoObj.muteBtn.innerHTML = '🔊';
+                    setTimeout(() => {
+                        videoObj.muteBtn.style.opacity = '0';
+                        setTimeout(() => {
+                            videoObj.muteBtn.style.display = 'none';
+                        }, 500);
+                    }, 2000);
+                }
+            }).catch(error => {
+                console.log("অটোপ্লে ব্লক হয়েছে:", error);
+                videoObj.loadingDiv.innerText = 'প্লে করতে ক্লিক করুন';
+                videoObj.loadingDiv.style.cursor = 'pointer';
+                videoObj.loadingDiv.onclick = () => {
+                    video.play();
+                    videoObj.loadingDiv.style.display = 'none';
+                };
+            });
+        }
+    }
+    
+    function playCurrentVideo() {
+        if (videoElements[currentPlayingIndex]) {
+            playVideoWithMuteCheck(videoElements[currentPlayingIndex], currentPlayingIndex);
+        }
+    }
+    
+    function updateUrlHash(index) {
+        // URL হ্যাশ আপডেট করা যায়
+        window.location.hash = `video-${index+1}`;
+    }
+    
+    // লাইক, কমেন্ট, শেয়ার ফাংশনালিটি (ডেমো)
+    function setupActions() {
+        container.addEventListener('click', (e) => {
+            const actionDiv = e.target.closest('.action-btn');
+            if (!actionDiv) return;
+            
+            const action = actionDiv.getAttribute('data-action');
+            const span = actionDiv.querySelector('span');
+            
+            if (action === 'like') {
+                let count = parseInt(span.innerText);
+                count++;
+                span.innerText = count;
+                // অ্যানিমেশন এফেক্ট
+                actionDiv.style.transform = 'scale(1.2)';
+                setTimeout(() => {
+                    actionDiv.style.transform = 'scale(1)';
+                }, 200);
+            } else if (action === 'comment') {
+                alert("কমেন্ট ফিচার শীঘ্রই আসছে!");
+            } else if (action === 'share') {
+                const currentVideo = videoElements[currentPlayingIndex];
+                if (currentVideo) {
+                    navigator.clipboard.writeText(currentVideo.element.src);
+                    alert("ভিডিও লিংক কপি করা হয়েছে!");
+                }
+            }
+        });
+    }
+    
+    // স্ক্রোল ইভেন্টে ভিডিও প্লে ঠিক রাখা
+    function handleScroll() {
+        // অবজারভার ইতিমধ্যে কাজ করছে
+    }
+    
+    // কিভাবে ভিডিও লিংক ফ্রি পাবেন?
+    // ==============================================
+    // ফ্রি ভিডিও হোস্টিং সাইটের নাম:
+    // 1. imgur.com (ভিডিও আপলোড করে ডাইরেক্ট লিংক পান)
+    // 2. catbox.moe (সরাসরি লিংক, ফ্রি)
+    // 3. gofile.io (ডাউনলোড লিংক থেকে ডাইরেক্ট ভিডিও লিংক)
+    // 4. streamable.com (ফ্রি একাউন্টে আপলোড)
+    // 5. mediafire (ডাইরেক্ট লিংক পেতে mediafire.com থেকে direct link জেনারেটর)
+    // 
+    // সবচেয়ে সহজ: catbox.moe এ ভিডিও আপলোড করুন, ডাইরেক্ট .mp4 লিংক পাবেন।
+    // ==============================================
+    
+    // ভিডিও রেন্ডার এবং অ্যাকশন সেটআপ
+    renderVideos();
+    setupActions();
+    
+    // স্ক্রোল ইভেন্ট লিসেনার (অতিরিক্ত নিরাপত্তা)
+    container.addEventListener('scroll', () => {
+        // কিছু করতে হবে না, অবজারভার সামলাবে
+    });
+    
+    // window resize এ কোনো সমস্যা হলে
+    window.addEventListener('resize', () => {
+        // রি-অবজার্ভ করতে পারে, কিন্তু প্রয়োজন নেই
+    });
+    
+    // প্রথম ভিডিও আনমিউটেড করতে
+    setTimeout(() => {
+        if (videoElements[0]) {
+            videoElements[0].element.muted = false;
+            videoElements[0].element.play().catch(e => console.log("প্লে ইস্যু", e));
+        }
+    }, 1000);
+    
+    // হেল্পার: ভিডিও লিংক আপডেট করার জন্য কনসোল ফাংশন
+    window.updateVideoLinks = function(newLinks) {
+        console.log("লিংক আপডেট করুন, নতুন লিংক অ্যারে দিন");
+        // এই ফাংশন ব্যবহার করে ডায়নামিক লিংক চেঞ্জ করা যাবে
+        if(Array.isArray(newLinks) && newLinks.length > 0) {
+            videoLinks.length = 0;
+            newLinks.forEach(link => videoLinks.push(link));
+            renderVideos();
+        }
+    };
+</script>
+
+</body>
+</html>
